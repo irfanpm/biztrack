@@ -8,3 +8,4 @@ export function checkOrigin(req,env=process.env){
  if(req.headers.get('origin')&&req.headers.get('origin')!==url.origin)throw new InputError('Origin not allowed.',403);
  if(req.headers.get('sec-fetch-site')==='cross-site')throw new InputError('Cross-site requests are not allowed.',403);
 }
+//hai
