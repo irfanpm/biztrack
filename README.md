@@ -62,3 +62,7 @@ npm start
 Development and production both use http://127.0.0.1:3000. Health: http://127.0.0.1:3000/api/health. Run only one app process on this port. Deployment needs a Next.js Node-capable host, not a static dist upload.
 
 Eight backend validation tests pass. The assistant environment blocks npm registry DNS (ENOTFOUND) and local MongoDB connection (EACCES). Next.js build, database CRUD and browser checks are not verified here. Check responsive widths 320/375/390/768/1440 before release.
+
+## Vercel deployment
+
+Set APP_URL to your exact HTTPS site origin, MONGODB_URI to your private MongoDB Atlas connection string, and MONGODB_DB to biztrack in Vercel environment variables. Redeploy after changing variables. Vercel deployment domains are also recognized automatically. Same-origin checks remain enabled and production cookies use Secure. Localhost MongoDB cannot be reached from Vercel; use Atlas and configure network access for the deployment. Never commit database passwords; rotate previously committed credentials.

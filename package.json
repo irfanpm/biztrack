@@ -7,7 +7,7 @@
     "dev": "next dev --hostname 127.0.0.1",
     "build": "next build",
     "test": "vitest run",
-    "test:server": "node --test server/*.test.mjs",
+    "test:server": "node --test server/validation.test.mjs server/security.test.mjs",
     "db:check": "node --env-file=.env.local scripts/check-db.mjs",
     "start": "next start --hostname 127.0.0.1"
   },

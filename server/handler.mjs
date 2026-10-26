@@ -1,10 +1,11 @@
 import {randomBytes,scryptSync,timingSafeEqual,createHash} from 'node:crypto';
 import {getDb} from './db.mjs';
+import {checkOrigin} from './security.mjs';
 import {InputError,validate} from './validation.mjs';
 const digest=token=>createHash('sha256').update(token).digest('hex');
 const publicRecord=({_id,user_id,...record})=>record;
 async function readBody(req){let text='';if(req.body){for await(const chunk of req.body){text+=Buffer.from(chunk).toString('utf8');if(Buffer.byteLength(text)>16384)throw new InputError('Request too large.',413);}}try{return JSON.parse(text||'{}');}catch{throw new InputError('Invalid JSON.');}}
-function cookie(token='',maxAge=604800){return 'biztrack_session='+token+'; Path=/; HttpOnly; SameSite=Strict; Max-Age='+maxAge;}
+function cookie(token='',maxAge=604800){return 'biztrack_session='+token+'; Path=/; HttpOnly; SameSite=Strict; Max-Age='+maxAge+(process.env.NODE_ENV==='production'?'; Secure':'');}
 async function newSession(db,user_id,headers){const token=randomBytes(32).toString('hex');await db.collection('sessions').insertOne({_id:digest(token),user_id,expires_at:new Date(Date.now()+604800000)});headers.set('Set-Cookie',cookie(token));return {user:{id:user_id}};}
 // Serialize mutations so product checks and entry changes cannot race in this single local API.
 let queue=Promise.resolve();
@@ -16,10 +17,7 @@ export async function handleRequest(req){
  const headers=new Headers({'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
  const send=(status,data)=>new Response(JSON.stringify(data),{status,headers});
  try{
-  const host=new URL(req.url).host;
-  if(!/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host))throw new InputError('Local connections only.',403);
-  if(req.headers.get('origin')){const origin=new URL(req.headers.get('origin'));if(!['localhost','127.0.0.1'].includes(origin.hostname))throw new InputError('Origin not allowed.',403);}
-  if(req.headers.get('sec-fetch-site')==='cross-site')throw new InputError('Cross-site requests are not allowed.',403);
+  checkOrigin(req);
   const db=await getDb();
   const path=new URL(req.url).pathname;
   if(path==='/api/health'&&req.method==='GET'){await db.command({ping:1});return send(200,{ok:true,database:db.databaseName});}
