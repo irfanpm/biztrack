@@ -8,7 +8,7 @@ export async function getDb(){
    try{
     await client.connect();
     const db=client.db(process.env.MONGODB_DB||'biztrack');
-    await Promise.all(['products','entries'].map(name=>db.collection(name).createIndex({user_id:1,id:1},{unique:true})));
+    await Promise.all(['products','entries','customers'].map(name=>db.collection(name).createIndex({user_id:1,id:1},{unique:true})));
     await db.collection('entries').createIndex({user_id:1,date:1});
     await db.collection('sessions').createIndex({expires_at:1},{expireAfterSeconds:0});
     return db;

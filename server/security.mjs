@@ -5,7 +5,10 @@ export function checkOrigin(req,env=process.env){
  const allowed=new Set(configured.filter(Boolean).map(value=>new URL(value).origin));
  if(!env.VERCEL&&['localhost','127.0.0.1'].includes(url.hostname))allowed.add(url.origin);
  if(!allowed.has(url.origin))throw new InputError('Deployment URL not allowed. Configure APP_URL.',403);
- if(req.headers.get('origin')&&req.headers.get('origin')!==url.origin)throw new InputError('Origin not allowed.',403);
+ const origin=req.headers.get('origin');
+ // Vercel may expose its deployment hostname to Next.js while the browser uses
+ // the production alias. Both must be explicitly trusted, rather than identical.
+ if(origin&&!allowed.has(origin))throw new InputError('Origin not allowed.',403);
  if(req.headers.get('sec-fetch-site')==='cross-site')throw new InputError('Cross-site requests are not allowed.',403);
 }
 //hai

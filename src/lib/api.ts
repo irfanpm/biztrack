@@ -18,7 +18,7 @@ export const database={
     async signUp(credentials:{email:string;password:string}){const r=await request('/auth/register','POST',credentials);if(!r.error)listeners.forEach(fn=>fn('SIGNED_IN',r.data.session));return {data:{session:r.data?.session||null},error:r.error};},
     async signOut(){const r=await request('/auth/logout','POST',{});if(!r.error)listeners.forEach(fn=>fn('SIGNED_OUT',null));return r;}
   },
-  from(kind:'products'|'entries') {return {
+  from(kind:'products'|'entries'|'customers') {return {
     select:(_columns:string)=>request('/'+kind),
     upsert:(record:unknown,_options?:unknown)=>request('/'+kind,'PUT',record),
     delete:()=>({eq:(_column:string,id:string)=>request('/'+kind+'/'+encodeURIComponent(id),'DELETE')})

@@ -42,16 +42,16 @@ export async function handleRequest(req){
   }
   if(!owner)throw new InputError('Please sign in.',401);
   if(path==='/api/auth/logout'&&req.method==='POST'){await db.collection('sessions').deleteOne({_id:digest(token)});headers.set('Set-Cookie',cookie('',0));return send(200,{ok:true});}
-  const match=/^\/api\/(products|entries)(?:\/([\da-f-]{36}))?$/.exec(path);
+  const match=/^\/api\/(products|entries|customers)(?:\/([\da-f-]{36}))?$/.exec(path);
   if(!match)throw new InputError('Not found.',404);
   const [,kind,id]=match;const collection=db.collection(kind);
   if(req.method==='GET'&&!id)return send(200,(await collection.find({user_id:owner}).toArray()).map(publicRecord));
   if(req.method==='PUT'&&!id){const record=validate(kind,await readBody(req));await locked(async()=>{
-   if(kind==='entries'&&record.product_id&&!await db.collection('products').findOne({user_id:owner,id:record.product_id,business:record.business}))throw new InputError('Product not found in this business.');
+   if(['entries','customers'].includes(kind)&&record.product_id&&!await db.collection('products').findOne({user_id:owner,id:record.product_id,business:record.business}))throw new InputError('Product not found in this business.');
    if(kind==='products'){const existing=await collection.findOne({user_id:owner,id:record.id});if(existing&&existing.business!==record.business)throw new InputError('A product cannot change businesses.');}
    await collection.updateOne({user_id:owner,id:record.id},{$set:{...record,user_id:owner}},{upsert:true});
   });return send(200,record);}
-  if(req.method==='DELETE'&&id){await locked(async()=>{if(kind==='products'&&await db.collection('entries').findOne({user_id:owner,product_id:id}))throw new InputError('Delete product entries first.',409);const result=await collection.deleteOne({user_id:owner,id});if(!result.deletedCount)throw new InputError('Record not found.',404);});return send(200,{ok:true});}
+  if(req.method==='DELETE'&&id){await locked(async()=>{if(kind==='products'&&(await db.collection('entries').findOne({user_id:owner,product_id:id})||await db.collection('customers').findOne({user_id:owner,product_id:id})))throw new InputError('Delete linked product entries and customer records first.',409);const result=await collection.deleteOne({user_id:owner,id});if(!result.deletedCount)throw new InputError('Record not found.',404);});return send(200,{ok:true});}
   throw new InputError('Method not allowed.',405);
  }catch(e){if(!e.status)console.error('API error:',e.message);return send(e.status||500,{error:e.status?e.message:'Database unavailable. Start MongoDB and retry.'});}
 }
